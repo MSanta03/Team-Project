@@ -12,6 +12,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
@@ -43,7 +44,9 @@ import guiUserUpdate.ViewUserUpdate;
  * @author Lynn Robert Carter
  * 
  * @version 1.00		2025-08-17 Initial version
- *  
+ * @version 1.01		2026-09-15 Added user selection ComboBox for Delete User functionality
+ * @version 1.02		2026-09-15 Added error alert to prevent an Admin from deleting their own account
+ * @version 1.03		2026-09-15 Added confirmation alert for Delete User functionality
  */
 
 public class ViewAdminHome {
@@ -100,7 +103,10 @@ public class ViewAdminHome {
 	// alert pops up to inform the admin of this fact.
 	protected static Button button_ManageInvitations = new Button("Manage Invitations");
 	protected static Button button_SetOnetimePassword = new Button("Set a One-Time Password");
+	protected static ComboBox <String> combobox_SelectUser = new ComboBox <String>();
 	protected static Button button_DeleteUser = new Button("Delete a User");
+	protected static Alert alertDeleteUserError = new Alert(AlertType.INFORMATION);
+	protected static Alert alertDeleteUserConfirmation = new Alert(AlertType.CONFIRMATION);
 	protected static Button button_ListUsers = new Button("List All Users");
 	protected static Button button_AddRemoveRoles = new Button("Add/Remove Roles");
 	protected static Alert alertNotImplemented = new Alert(AlertType.INFORMATION);
@@ -252,6 +258,21 @@ public class ViewAdminHome {
 		button_SetOnetimePassword.setOnAction((_) -> 
 			{ControllerAdminHome.setOnetimePassword(); });
 
+		setupComboBoxUI(combobox_SelectUser, "Dialog", 16, 250, 280, 370);
+
+		List<String> userList = theDatabase.getUserList();
+
+		combobox_SelectUser.setItems(FXCollections.observableArrayList(userList));
+		combobox_SelectUser.getSelectionModel().select(0);
+		
+		alertDeleteUserError.setTitle("Delete User Error");
+		alertDeleteUserError.setHeaderText("The user account could not be deleted.");
+		
+		alertDeleteUserConfirmation.setTitle("Delete User");
+		alertDeleteUserConfirmation.setHeaderText("Are you sure?");
+		
+		alertDeleteUserConfirmation.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+		
 		setupButtonUI(button_DeleteUser, "Dialog", 16, 250, Pos.CENTER, 20, 370);
 		button_DeleteUser.setOnAction((_) -> {ControllerAdminHome.deleteUser(); });
 
@@ -280,6 +301,7 @@ public class ViewAdminHome {
     		combobox_SelectRole, button_SendInvitation, line_Separator3,
     		button_ManageInvitations,
     		button_SetOnetimePassword,
+    		combobox_SelectUser,
     		button_DeleteUser,
     		button_ListUsers,
     		button_AddRemoveRoles,

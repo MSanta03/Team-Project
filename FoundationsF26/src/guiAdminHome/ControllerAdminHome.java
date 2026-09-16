@@ -1,6 +1,9 @@
 package guiAdminHome;
 
+import java.util.Optional;
+
 import database.Database;
+import javafx.scene.control.ButtonType;
 
 /*******
  * <p> Title: GUIAdminHomePage Class. </p>
@@ -22,8 +25,8 @@ import database.Database;
  * @author Lynn Robert Carter
  * 
  * @version 1.00		2025-08-17 Initial version
- * @version 1.01		2025-09-16 Update Javadoc documentation *  
- * @version 1.02		2026-09-13 Update setOnetimePassword() to have implementation instead of placeholder code 
+ * @version 1.01		2025-09-16 Update Javadoc documentation * 
+ * @version 1.02    	2026-09-15 Implemented initial Delete User functionality and self-deletion protection  
  */
 
 public class ControllerAdminHome {
@@ -108,13 +111,15 @@ public class ControllerAdminHome {
 	 * 
 	 * Title: setOnetimePassword () Method. </p>
 	 * 
-	 * <p> Description: Protected method that allows the Admin to select an existing user and
-	 * establish a one time password for that user.  The actual selection and password processing
-	 * is performed by the set one time password page. </p>
+	 * <p> Description: Protected method that is currently a stub informing the user that
+	 * this function has not yet been implemented. </p>
 	 */
 	protected static void setOnetimePassword () {
-		guiOneTimePassword.ViewOneTimePassword.displayOneTimePassword(
-				ViewAdminHome.theStage, ViewAdminHome.theUser);
+		System.out.println("\n*** WARNING ***: One-Time Password Not Yet Implemented");
+		ViewAdminHome.alertNotImplemented.setTitle("*** WARNING ***");
+		ViewAdminHome.alertNotImplemented.setHeaderText("One-Time Password Issue");
+		ViewAdminHome.alertNotImplemented.setContentText("One-Time Password Not Yet Implemented");
+		ViewAdminHome.alertNotImplemented.showAndWait();
 	}
 	
 	/**********
@@ -126,11 +131,41 @@ public class ControllerAdminHome {
 	 * this function has not yet been implemented. </p>
 	 */
 	protected static void deleteUser() {
-		System.out.println("\n*** WARNING ***: Delete User Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.setTitle("*** WARNING ***");
-		ViewAdminHome.alertNotImplemented.setHeaderText("Delete User Issue");
-		ViewAdminHome.alertNotImplemented.setContentText("Delete User Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.showAndWait();
+	    String selectedUser = ViewAdminHome.combobox_SelectUser.getValue();
+
+	    // Checks to make sure a user is selected
+	    if (selectedUser == null || selectedUser.equals("<Select a User>")) {
+	        ViewAdminHome.alertDeleteUserError.setContentText(
+	                "Please select a user account to delete.");
+	        ViewAdminHome.alertDeleteUserError.showAndWait();
+	        return;
+	    }
+	    
+	    // Prevents the Admin from deleting their own account
+	    if (selectedUser.equals(ViewAdminHome.theUser.getUserName())) {
+	        ViewAdminHome.alertDeleteUserError.setContentText(
+	                "You cannot delete your own user account.");
+	        ViewAdminHome.alertDeleteUserError.showAndWait();
+	        return;
+	    }
+	    
+	    // Confirmation message
+	    ViewAdminHome.alertDeleteUserConfirmation.setContentText(
+	            "Are you sure you want to delete the user " + selectedUser + "?");
+
+	    Optional<ButtonType> result = ViewAdminHome.alertDeleteUserConfirmation.showAndWait();
+	    
+	    // Delete only if Yes is clicked
+	    if (result.isPresent() && result.get() == ButtonType.YES) {
+	    	theDatabase.deleteUser(selectedUser);
+	        System.out.println(selectedUser + " has been deleted.");
+	        
+	        ViewAdminHome.combobox_SelectUser.getItems().remove(selectedUser);
+	        ViewAdminHome.combobox_SelectUser.getSelectionModel().select(0);
+	        
+	        ViewAdminHome.label_NumberOfUsers.setText("Number of Users: " + theDatabase.getNumberOfUsers());
+	    }
+	    
 	}
 	
 	/**********
