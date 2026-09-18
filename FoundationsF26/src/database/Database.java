@@ -22,17 +22,11 @@ import entityClasses.User;
  * 
  * <p> Copyright: Lynn Robert Carter © 2025 </p>
  * 
- * @author Jacob Yates
+ * @author Lynn Robert Carter
  * 
  * @version 2.00		2025-04-29 Updated and expanded from the version produce by Pravalika 
  * 							Mukkiri and Ishwarya Hidkimath Basavaraj
  * @version 2.01		2025-12-17 Minor updates for Spring 2026
- * 
- * @version 2.02		2026-09-13 Added all logic for One Time Passwords - 
- * 								   Added oneTimePassword to userDB, setOneTimePassword(), isValidOneTimePassword(),
- * 								   clearOneTimePassword(), updatePassword()
- * @version 2.03		2026-09-13 Updated getUserAccountDetails to search by name instead of row number
- * 								   due to bug caused when adding One time password table to DB
  */
 
 /*
@@ -115,7 +109,6 @@ public class Database {
 				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
 				+ "userName VARCHAR(255) UNIQUE, "
 				+ "password VARCHAR(255), "
-				+ "oneTimePassword VARCHAR(255), "
 				+ "firstName VARCHAR(255), "
 				+ "middleName VARCHAR(255), "
 				+ "lastName VARCHAR (255), "
@@ -830,16 +823,16 @@ public class Database {
 			pstmt.setString(1, username);
 	        ResultSet rs = pstmt.executeQuery();			
 			rs.next();
-			currentUsername = rs.getString("userName");
-			currentPassword = rs.getString("password");
-			currentFirstName = rs.getString("firstName");
-			currentMiddleName = rs.getString("middleName");
-			currentLastName = rs.getString("lastName");
-			currentPreferredFirstName = rs.getString("preferredFirstName");
-			currentEmailAddress = rs.getString("emailAddress");
-			currentAdminRole = rs.getBoolean("adminRole");
-			currentNewRole1 = rs.getBoolean("newRole1");
-			currentNewRole2 = rs.getBoolean("newRole2");
+	    	currentUsername = rs.getString(2);
+	    	currentPassword = rs.getString(3);
+	    	currentFirstName = rs.getString(4);
+	    	currentMiddleName = rs.getString(5);
+	    	currentLastName = rs.getString(6);
+	    	currentPreferredFirstName = rs.getString(7);
+	    	currentEmailAddress = rs.getString(8);
+	    	currentAdminRole = rs.getBoolean(9);
+	    	currentNewRole1 = rs.getBoolean(10);
+	    	currentNewRole2 = rs.getBoolean(11);
 			return true;
 	    } catch (SQLException e) {
 			return false;
@@ -912,6 +905,46 @@ public class Database {
 		return false;
 	}
 	
+	//deleteUser 
+	public boolean deleteUser(String username) {
+		String query = "DELETE FROM userDB WHERE userName = ?";
+		try(PreparedStatement pstmt = connection.prepareStatement(query)){
+			pstmt.setString(1,  username);
+			return pstmt.executeUpdate() > 0;
+		} catch(SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+	// return all users in the database
+	public List<User> getAllUsers(){
+		List<User> users = new ArrayList<User>();
+		String query = "SELECT userName, firstName, middleName, lastName, " + "preferredFirstName, emailAddress, adminRole, newRole1, newRole2 " + "FROM userDB";
+		try(PreparedStatement pstmt = connection.prepareStatement(query)){
+			ResultSet rs = pstmt.executeQuery();
+			while(rs.next()) {
+				User user = new User();
+				
+				user.setUserName(rs.getString("userName"));
+				user.setFirstName(rs.getString("firstName"));
+				user.setMiddleName(rs.getString("middleName"));
+				user.setLastName(rs.getString("lastName"));
+				user.setPreferredFirstName(rs.getString("preferredFirstName"));
+				user.setEmailAddress(rs.getString("emailAddress"));
+				
+				user.setAdminRole(rs.getBoolean("adminRole"));
+				user.setRole1User(rs.getBoolean("newRole1"));
+				user.setRole2User(rs.getBoolean("newRole2"));
+				
+				users.add(user);
+				
+			}
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}
+		return users;
+	}
 	
 	// Attribute getters for the current user
 	/*******
@@ -1068,156 +1101,4 @@ public class Database {
 			se.printStackTrace(); 
 		} 
 	}
-	
-	
-	/*******
-	 * <p> Method: boolean setOneTimePassword(String username, String oneTimePassword) </p>
-	 * 
-	 * <p> Description: Set a one time password for the user associated with the specified username
-	 * The one time password is stored separately from the users normal password so the users
-	 * permanent password is not changed until the user establishes a new password. </p>
-	 * 
-	 * @param username specifies the user whose one time password is to be set
-	 * 
-	 * @param oneTimePassword specifies the temporary password that will be used one time to log in.
-	 * 
-	 * @return true if the one time password was stored for the specified user, else false.
-	 * 
-	 */
-	public boolean setOneTimePassword(String username, String oneTimePassword) {
-		// Store the one-time password for the specified user
-		String query = "UPDATE userDB SET oneTimePassword = ? WHERE userName = ?";
-		
-		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, oneTimePassword);
-			pstmt.setString(2, username);
-			
-			int numberOfRowsUpdated = pstmt.executeUpdate();
-			
-			// One row should be updated when the username exists, meaning the one time password was updated
-			return numberOfRowsUpdated == 1;
-			
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		return false;
-	}
-	
-
-	/*******
-	 * <p> Method: boolean isValidOneTimePassword(String username, String oneTimePassword) </p>
-	 * 
-	 * <p> Description: Determine if the specified one-time password is the active one-time password
-	 * associated with the specified username.  The one-time password is user specific.  A one-time
-	 * password associated with another username will not be accepted for this user. </p>
-	 * 
-	 * @param username specifies the user attempting to log in.
-	 * 
-	 * @param oneTimePassword specifies the password entered by the user.
-	 * 
-	 * @return true if the specified password is the active one-time password for this user, else false.
-	 * 
-	 */
-	public boolean isValidOneTimePassword(String username, String oneTimePassword) {
-		// Fetch only the one-time password that belongs to this username
-		String query = "SELECT oneTimePassword FROM userDB WHERE userName = ?";
-		
-		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, username);
-			ResultSet rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				String storedOneTimePassword = rs.getString("oneTimePassword");
-				
-				// A NULL value means this user does not currently have an active one-time password
-				if (storedOneTimePassword == null) {
-					return false;
-				}
-				
-				// Compare the entered password with this user's one-time password
-				return oneTimePassword.equals(storedOneTimePassword);
-			}
-			
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		return false;
-	}
-	
-	/*******
-	 * <p> Method: boolean clearOneTimePassword(String username) </p>
-	 * 
-	 * <p> Description: Clear the one-time password associated with the specified username.  This
-	 * method is used after the user successfully logs in using the one-time password so that the
-	 * password cannot be used a second time. </p>
-	 * 
-	 * @param username specifies the user whose one-time password is to be cleared.
-	 * 
-	 * @return true if the one-time password was cleared for the specified user, else false.
-	 * 
-	 */
-	public boolean clearOneTimePassword(String username) {
-		// Set the user's one-time password to NULL so it can no longer be used
-		String query = "UPDATE userDB SET oneTimePassword = NULL WHERE userName = ?";
-		
-		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, username);
-			
-			int numberOfRowsUpdated = pstmt.executeUpdate();
-			
-			return numberOfRowsUpdated == 1;
-			
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		return false;
-	}
-	
-	/*******
-	 * <p> Method: boolean updatePassword(String username, String newPassword) </p>
-	 * 
-	 * <p> Description: Replace the permanent password associated with the specified username with
-	 * the new password.  This method is used after a user has logged in using a one-time password
-	 * and successfully created a valid new permanent password. </p>
-	 * 
-	 * @param username specifies the user whose permanent password is to be updated.
-	 * 
-	 * @param newPassword specifies the new permanent password for this user.
-	 * 
-	 * @return true if the permanent password was updated, else false.
-	 * 
-	 */
-	public boolean updatePassword(String username, String newPassword) {
-		// Replace the current permanent password with the new password
-		String query = "UPDATE userDB SET password = ? WHERE userName = ?";
-		
-		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-			pstmt.setString(1, newPassword);
-			pstmt.setString(2, username);
-			
-			int numberOfRowsUpdated = pstmt.executeUpdate();
-			
-			// Keep the current user information synchronized if this is the current account
-			if (numberOfRowsUpdated == 1 && username.equals(currentUsername)) {
-				currentPassword = newPassword;
-			}
-			
-			return numberOfRowsUpdated == 1;
-			
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		return false;
-	}
-	
-	
-	
 }
-
-
-
-

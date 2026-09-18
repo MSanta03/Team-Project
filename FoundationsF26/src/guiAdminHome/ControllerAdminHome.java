@@ -23,7 +23,6 @@ import database.Database;
  * 
  * @version 1.00		2025-08-17 Initial version
  * @version 1.01		2025-09-16 Update Javadoc documentation *  
- * @version 1.02		2026-09-13 Update setOnetimePassword() to have implementation instead of placeholder code 
  */
 
 public class ControllerAdminHome {
@@ -108,13 +107,15 @@ public class ControllerAdminHome {
 	 * 
 	 * Title: setOnetimePassword () Method. </p>
 	 * 
-	 * <p> Description: Protected method that allows the Admin to select an existing user and
-	 * establish a one time password for that user.  The actual selection and password processing
-	 * is performed by the set one time password page. </p>
+	 * <p> Description: Protected method that is currently a stub informing the user that
+	 * this function has not yet been implemented. </p>
 	 */
 	protected static void setOnetimePassword () {
-		guiOneTimePassword.ViewOneTimePassword.displayOneTimePassword(
-				ViewAdminHome.theStage, ViewAdminHome.theUser);
+		System.out.println("\n*** WARNING ***: One-Time Password Not Yet Implemented");
+		ViewAdminHome.alertNotImplemented.setTitle("*** WARNING ***");
+		ViewAdminHome.alertNotImplemented.setHeaderText("One-Time Password Issue");
+		ViewAdminHome.alertNotImplemented.setContentText("One-Time Password Not Yet Implemented");
+		ViewAdminHome.alertNotImplemented.showAndWait();
 	}
 	
 	/**********
@@ -142,13 +143,10 @@ public class ControllerAdminHome {
 	 * this function has not yet been implemented. </p>
 	 */
 	protected static void listUsers() {
-		System.out.println("\n*** WARNING ***: List Users Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.setTitle("*** WARNING ***");
-		ViewAdminHome.alertNotImplemented.setHeaderText("List User Issue");
-		ViewAdminHome.alertNotImplemented.setContentText("List Users Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.showAndWait();
+		guiListUsers.ViewListUsers.displayListUsers(
+				ViewAdminHome.theStage,
+				ViewAdminHome.theUser);
 	}
-	
 	/**********
 	 * <p> 
 	 * 

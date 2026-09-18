@@ -26,7 +26,6 @@ import javafx.stage.Stage;
  * 
  * @version 1.00		2025-08-17 Initial version
  * @version 1.01		2025-09-16 Update Javadoc documentation *  
- * @version 1.02		2026-09-13 added One Time Password check after username and before password in doLogin() 
  */
 
 public class ControllerUserLogin {
@@ -79,22 +78,7 @@ public class ControllerUserLogin {
     		return;
     	}
 		// System.out.println("*** Username is valid");
-     	
-     	
-        // Check to see if the password entered is the users active one time password
-     	if (theDatabase.isValidOneTimePassword(username, password)) {
-     		
-     		// The user has successfully used the one-time password.  Clear it immediately so the
-     		// same one time password cannot be used again.
-     		theDatabase.clearOneTimePassword(username);
-     		
-     		// Take the user directly to the page where a new permanent password must be created.
-     		// The user must not be allowed to continue to one of the normal role home pages yet.
-     		guiResetPassword.ViewResetPassword.displayResetPassword(theStage, username);
-     		return;
-     	}
-     	
-     	
+		
 		// Check to see that the login password matches the account password
     	String actualPassword = theDatabase.getCurrentPassword();
     	
