@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 import entityClasses.User;
+import entityClasses.LessonLearned;
 
 /*******
  * <p> Title: Database Class. </p>
@@ -132,6 +133,15 @@ public class Database {
 	    		+ "emailAddress VARCHAR(255), "
 	            + "role VARCHAR(10))";
 	    statement.execute(invitationCodesTable);
+	    
+	    // Create the lessons learned database.
+	    String lessonsTable = "CREATE TABLE IF NOT EXISTS lessonDB ("
+	    		+ "id INT AUTO_INCREMENT PRIMARY KEY, "
+	    		+ "userName VARCHAR(255), "
+	    		+ "title VARCHAR(255) UNIQUE, "
+	    		+ "description VARCHAR(1024), "
+	    		+ "experienceInfo VARCHAR(1024))";
+	    statement.execute(lessonsTable);
 	}
 
 
@@ -1263,8 +1273,182 @@ public class Database {
 		return false;
 	}
 	
+	/**
+	 *  <p> Method: boolean doesLessonExist(LessonLearned lesson) </p>
+	 * 
+	 *  <p> Description: Queries the lessonDb table to see if the lesson in question has been submitted to the database or not.
+	 *  This is useful to check whether or not a lesson has been submitted before trying to add it to the database. </p> 
+	 *  
+	 *  @param lesson The LessonLearned that will be searched for in the database
+	 *  @return the boolean value of whether or not the lesson was in the database.
+	 */
+	public boolean doesLessonExist(LessonLearned lesson) {
+		 String query = "SELECT COUNT(*) FROM lessonDB WHERE userName = ? AND title = ?";
+		    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+		        
+		        pstmt.setString(1, lesson.getCreatorName());
+		        pstmt.setString(2,  lesson.getTitle());
+		        ResultSet rs = pstmt.executeQuery();
+		        
+		        if (rs.next()) {
+		            // If the count is greater than 0, the lesson exists
+		            return rs.getInt(1) > 0;
+		        }
+		    } catch (SQLException e) {
+		        e.printStackTrace();
+		    }
+		    return false; // If an error occurs, assume lesson doesn't exist
+	}
+	
+	/**
+	 * <p> Method: addLesson(User user, LessonLearned lesson) </p>
+	 * 
+	 * <p> Description: adds the given lesson to the database if it doesn't already exist in the database and
+	 * attributes is creator to the provided user. </p>
+	 * 
+	 * @param user The User responsible for creating the lesson
+	 * @param lesson The LessonLearned to be added to the database
+	 * @return Whether or not the lesson was successfully added to the database.
+	 * 
+	 * */
+	public boolean addLesson(User user, LessonLearned lesson) {
+		if (doesLessonExist(lesson)) return false;
+		
+		String insertUser = "INSERT INTO lessonDB (userName, title, description, experienceInfo) "
+				+ "VALUES (?, ?, ?, ?)";
+		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
+			pstmt.setString(1, user.getUserName());
+			
+			pstmt.setString(2, lesson.getTitle());
+			
+			pstmt.setString(3, lesson.getDescription());
+			
+			pstmt.setString(4, lesson.getExperienceInfo());
+			
+			pstmt.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * <p> Method: List<LessonLearned> getAllLessonsLearnedForUser(User user) </p>
+	 * 
+	 * <p> Description: Gets a list of all the lessons learned that belong to a specific user. </p>
+	 * 
+	 * @param user the User whose lessons are being searched for.
+	 * @return the List of lessons learned submitted by the given user.
+	 * */
+	public List<LessonLearned> getAllLessonsLearnedForUser(User user) {
+		List<LessonLearned> lessons = new ArrayList<LessonLearned>();
+		String query = "SELECT userName, title, description, experienceInfo " + "FROM lessonDB WHERE userName = ?";
+		try(PreparedStatement pstmt = connection.prepareStatement(query)){
+			pstmt.setString(1, user.getUserName());
+			ResultSet rs = pstmt.executeQuery();
+			while(rs.next()) {
+				LessonLearned lesson = new LessonLearned(user.getUserName());
+				
+				lesson.setTitle(rs.getString("title"));
+				lesson.setDescription(rs.getString("description"));
+				lesson.setExperienceInfo(rs.getString("experienceInfo"));
+				
+				lessons.add(lesson);
+				
+			}
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}
+		return lessons;
+	}
+	
+	/**
+	 * <p> Method: List<LessonLearned> getAllLessonsLearned() </p>
+	 * 
+	 * <p> Description: Returns a list of all the lessonsleanrned submitted by all users. </p>
+	 * 
+	 * @return the List of all the lessons in the database.
+	 * 
+	 * */
+	public List<LessonLearned> getAllLessonsLearned() {
+		List<LessonLearned> lessons = new ArrayList<LessonLearned>();
+		String query = "SELECT * FROM lessonDB";
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			ResultSet rs = pstmt.executeQuery();
+			while (rs.next()) {
+				LessonLearned lesson = new LessonLearned(rs.getString("userName"));
+				
+				lesson.setTitle(rs.getString("title"));
+				lesson.setDescription(rs.getString("description"));
+				lesson.setExperienceInfo(rs.getString("experienceInfo"));
+				
+				lessons.add(lesson);
+				
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return lessons;
+	}
+	
+	/**
+	 * <p> Method: boolean updateLesson(User user, LessonLearned lesson) </p>
+	 * 
+	 * <p> Description: Updates the given lesson with new information stored in the object </p>
+	 * 
+	 * @param user The user responsible for creating the lesson
+	 * @param lesson The lesson to be updated with the new information.
+	 * @return Whether or not the update operation was successful.
+	 * 
+	 * */
+	public boolean updateLesson(User user, LessonLearned lesson) {
+			String query = "UPDATE lessonDB SET title = ?, description = ?, experienceInfo = ? WHERE title = ?";
+			
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, lesson.getTitle());
+				pstmt.setString(2, lesson.getDescription());
+				pstmt.setString(3,  lesson.getExperienceInfo());
+				pstmt.setString(4,  lesson.getTitle());
+				
+				int numberOfRowsUpdated = pstmt.executeUpdate();
+				
+				return numberOfRowsUpdated == 1;
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			
+			return false;
+	}
 	
 	
+	/**
+	 * <p> Method: boolean deleteLesson(User user, LessonLearned lesson) </p>
+	 * 
+	 * <p> Description: removes the given lesson from the database. </p>
+	 * 
+	 * @param user The User that created the lesson.
+	 * @param lesson The Lesson to be deleted.
+	 * @return Whether or not the delete operation was successful.
+	 * 
+	 * */
+	public boolean deleteLesson(User user, LessonLearned lesson) {
+		String query = "DELETE FROM lessonDB WHERE title = ?";
+		
+		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+			pstmt.setString(1,  lesson.getTitle());
+			int numberOfRowsUpdated = pstmt.executeUpdate();
+			
+			return numberOfRowsUpdated == 1;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
 }
 
 
